@@ -3,9 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Fishing Conditions</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0077be">
+
+    <script>
+         // PWA Service Worker Registration
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./service-worker.js")
+                    .then(reg => console.log("SW registered"))
+                    .catch(err => console.log("SW failed", err));
+            });
+        }
+    </script>
 </head>
 <body>
-    <p>Hello!</p>
+    <div id="app">
+        <h1>Fisherman's Forecast</h1>
+        <div class="input-group">
+            <input type="text" id="locationInput" placeholder="Enter city (e.g., Växjö)">
+            <button id="checkBtn">Check Conditions</button>
+        </div>
+        <div id="result" class="fade-in"></div>
+    </div>
+    <script src="app.js"></script>
 </body>
 </html>
