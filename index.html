@@ -7,9 +7,7 @@
     <link rel="stylesheet" href="./style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0077be">
-
     <script>
-         // PWA Service Worker Registration
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {
                 navigator.serviceWorker.register("./service-worker.js")
@@ -21,25 +19,24 @@
 </head>
 <body>
     <div id="app">
-        <h1>Fisherman's Forecast</h1>
-        <div class="input-group">
-            <input type="text" id="locationInput" placeholder="Enter city (e.g., Växjö)">
-            <button id="checkBtn">Check Conditions</button>
+        <div id="screen">
+            <h1>Fisherman's Forecast</h1>
+            <div class="input-group">
+                <input type="text" id="locationInput" placeholder="Enter city (e.g., Växjö)">
+                <button id="checkBtn">Check Conditions</button>
+            </div>
         </div>
+
         <div id="result" class="fade-in"></div>
-            <nav id="liquidNav">
-                <div id="water-container">
-                    <div id="water-surface"></div>
-                </div>
-                <div id="splash" class="hidden"></div>
-                <div id="bobber" class="hidden">🔴</div>
-                
-                <div class="nav-buttons">
-                    <button class="nav-item" data-index="0">Weather</button>
-                    <button class="nav-item" data-index="1">Catch</button>
-                    <button class="nav-item" data-index="2">Map</button>
-                </div>
-            </nav>
+
+        <nav id="liquidNav">
+            <canvas id="waterCanvas"></canvas>
+            <div class="nav-buttons">
+                <button class="nav-item" data-index="0"><span>Weather</span></button>
+                <button class="nav-item" data-index="1"><span>Catch</span></button>
+                <button class="nav-item" data-index="2"><span>Map</span></button>
+            </div>
+        </nav>
     </div>
     <script src="app.js"></script>
 </body>
