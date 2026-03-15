@@ -3,39 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fishing Conditions</title>
+    <title>StringTune - Guitar Tuner</title>
     <link rel="stylesheet" href="./style.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0077be">
-    <script>
-        if ("serviceWorker" in navigator) {
-            window.addEventListener("load", () => {
-                navigator.serviceWorker.register("./service-worker.js")
-                    .then(reg => console.log("SW registered"))
-                    .catch(err => console.log("SW failed", err));
-            });
-        }
-    </script>
 </head>
 <body>
     <div id="app">
         <div id="screen">
-            <h1>Fisherman's Forecast</h1>
+            <h1>StringTune</h1>
+            <div class="tuner-container">
+                <div id="noteDisplay">-</div>
+                <div id="statusIndicator">Ready</div>
+                <div id="frequencyDisplay">0.00 Hz</div>
+            </div>
+
+            <div class="string-selectors">
+                <button class="string-btn active" data-note="Auto">Auto</button>
+                <button class="string-btn" data-note="E2">E</button>
+                <button class="string-btn" data-note="A2">A</button>
+                <button class="string-btn" data-note="D3">D</button>
+                <button class="string-btn" data-note="G3">G</button>
+                <button class="string-btn" data-note="B3">B</button>
+                <button class="string-btn" data-note="E4">e</button>
+            </div>
+            
             <div class="input-group">
-                <input type="text" id="locationInput" placeholder="Enter city (e.g., Växjö)">
-                <button id="checkBtn">Check Conditions</button>
+                <button id="startBtn">Start Tuner</button>
             </div>
         </div>
 
-        <div id="result" class="fade-in"></div>
-
-        <nav id="liquidNav">
-            <canvas id="waterCanvas"></canvas>
-            <div class="nav-buttons">
-                <button class="nav-item" data-index="0"><span>Weather</span></button>
-                <button class="nav-item" data-index="1"><span>Catch</span></button>
-                <button class="nav-item" data-index="2"><span>Map</span></button>
-            </div>
+        <nav id="tunerNav">
+            <canvas id="meterCanvas"></canvas>
         </nav>
     </div>
     <script src="app.js"></script>

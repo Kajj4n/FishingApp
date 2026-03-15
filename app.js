@@ -1,203 +1,196 @@
-class FishingApp {
+class GuitarTuner {
     constructor() {
-        this.checkBtn = document.getElementById('checkBtn');
-        this.locationInput = document.getElementById('locationInput');
-        this.resultDiv = document.getElementById('result');
-        this.apiKey = 'e7c0111f206349331bc76ad140a75f4f'; 
-        this.checkBtn.addEventListener('click', () => this.handleCheck());
-    }
+        this.audioCtx = null;
+        this.analyser = null;
+        this.dataArray = null;
+        this.isRunning = false;
+        this.selectedMode = 'Auto'; // New state tracker
 
-    async handleCheck() {
-        const city = this.locationInput.value.trim();
-        if (!city) { this.showError("Please enter a location."); return; }
-        this.checkBtn.textContent = "Casting line...";
-        this.checkBtn.classList.add('loading-pulse');
-        try {
-            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${this.apiKey}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Location not found");
-            const data = await response.json();
-            this.analyzeConditions(data);
-        } catch (error) { this.showError("Location not found!"); }
-        finally {
-            this.checkBtn.textContent = "Check Conditions";
-            this.checkBtn.classList.remove('loading-pulse');
-        }
-    }
+        this.standardTuning = [
+            { note: 'E2', freq: 82.41 },
+            { note: 'A2', freq: 110.00 },
+            { note: 'D3', freq: 146.83 },
+            { note: 'G3', freq: 196.00 },
+            { note: 'B3', freq: 246.94 },
+            { note: 'E4', freq: 329.63 }
+        ];
 
-    analyzeConditions(data) {
-        const wind = data.wind.speed;
-        const verdict = (wind > 8) ? "Too windy! Fish deep." : "Great conditions!";
-        this.resultDiv.innerHTML = `<strong>${data.name}</strong>: ${data.main.temp}°C<br>${verdict}`;
-        this.resultDiv.classList.add('visible');
-    }
-
-    showError(msg) {
-        this.resultDiv.innerHTML = `<span style="color:red">${msg}</span>`;
-        this.resultDiv.classList.add('visible');
-    }
-}
-
-class WaterNav {
-    constructor() {
-        this.canvas = document.getElementById('waterCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.buttons = document.querySelectorAll('.nav-item');
-        
-        // Physics
-        this.springs = [];
-        this.numSprings = 35;
-        this.targetHeight = 35; // Centered in 70px nav to prevent clipping
-        this.tension = 0.025;
-        this.damping = 0.08;
-        this.spread = 0.15;
-        
-        // Bobber State
-        this.bobber = {
-            x: -100,
-            y: -200,
-            targetX: -100,
-            isCasting: false,
-            activeIdx: -1
+        this.ui = {
+            note: document.getElementById('noteDisplay'),
+            freq: document.getElementById('frequencyDisplay'),
+            status: document.getElementById('statusIndicator'),
+            canvas: document.getElementById('meterCanvas'),
+            startBtn: document.getElementById('startBtn'),
+            stringBtns: document.querySelectorAll('.string-btn') // Grab the new buttons
         };
 
-        this.tilt = 0;
-        this.init();
-    }
+        this.ctx = this.ui.canvas.getContext('2d');
+        this.currentCents = 0;
 
-    init() {
-        this.resize();
-        window.addEventListener('resize', () => this.resize());
-
-        for (let i = 0; i < this.numSprings; i++) {
-            this.springs[i] = {
-                x: (this.canvas.width / (this.numSprings - 1)) * i,
-                y: this.targetHeight,
-                height: this.targetHeight,
-                vel: 0
-            };
-        }
-
-        this.buttons.forEach((btn, idx) => {
-            btn.addEventListener('click', () => this.castToButton(idx));
-        });
-
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (e) => {
-                this.tilt = (e.gamma || 0) * 0.5;
-            });
-        }
-        this.animate();
-    }
-
-    resize() {
-        this.canvas.width = this.canvas.offsetWidth;
-        this.canvas.height = this.canvas.offsetHeight;
-    }
-
-    castToButton(idx) {
-        // Reset text on all buttons first
-        this.buttons.forEach(btn => btn.querySelector('span').classList.remove('text-hidden'));
-
-        const rect = this.buttons[idx].getBoundingClientRect();
-        const navRect = this.canvas.getBoundingClientRect();
+        this.ui.startBtn.addEventListener('click', () => this.toggleTuner());
         
-        this.bobber.activeIdx = idx;
-        this.bobber.targetX = (rect.left - navRect.left) + (rect.width / 2);
-        this.bobber.x = this.bobber.targetX;
-        this.bobber.y = -300; // Start way above screen
-        this.bobber.isCasting = true;
+        // Setup listeners for string selection
+        this.ui.stringBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => this.selectString(e.target));
+        });
+    }
+
+    selectString(btnTarget) {
+        // Update UI styling
+        this.ui.stringBtns.forEach(btn => btn.classList.remove('active'));
+        btnTarget.classList.add('active');
+
+        // Update internal state
+        this.selectedMode = btnTarget.dataset.note;
+        
+        // Reset display if the tuner isn't actively running
+        if (!this.isRunning) {
+            this.ui.note.textContent = this.selectedMode === 'Auto' ? '-' : this.selectedMode.replace(/[0-9]/g, '');
+        }
+    }
+
+    async toggleTuner() {
+        if (this.isRunning) {
+            this.audioCtx.close();
+            this.isRunning = false;
+            this.ui.startBtn.textContent = "Start Tuner";
+            this.ui.status.textContent = "Ready";
+            return;
+        }
+
+        try {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const source = this.audioCtx.createMediaStreamSource(stream);
+            
+            this.analyser = this.audioCtx.createAnalyser();
+            this.analyser.fftSize = 2048;
+            source.connect(this.analyser);
+
+            this.dataArray = new Float32Array(this.analyser.fftSize);
+            this.isRunning = true;
+            this.ui.startBtn.textContent = "Stop Tuner";
+            this.update();
+        } catch (err) {
+            alert("Microphone access denied or not available.");
+        }
     }
 
     update() {
-        // Water Physics
-        for (let i = 0; i < this.numSprings; i++) {
-            const s = this.springs[i];
-            const tiltOffset = (i / this.numSprings - 0.5) * this.tilt;
-            const diff = (this.targetHeight + tiltOffset) - s.height;
-            s.vel += this.tension * diff - s.vel * this.damping;
-            s.height += s.vel;
-        }
+        if (!this.isRunning) return;
 
-        // Spread waves
-        for (let j = 0; j < 6; j++) {
-            for (let i = 0; i < this.numSprings; i++) {
-                if (i > 0) {
-                    let diff = this.spread * (this.springs[i].height - this.springs[i-1].height);
-                    this.springs[i-1].vel += diff;
-                }
-                if (i < this.numSprings - 1) {
-                    let diff = this.spread * (this.springs[i].height - this.springs[i+1].height);
-                    this.springs[i+1].vel += diff;
-                }
-            }
-        }
+        this.analyser.getFloatTimeDomainData(this.dataArray);
+        const pitch = this.autoCorrelate(this.dataArray, this.audioCtx.sampleRate);
 
-        // Bobber Movement
-        if (this.bobber.isCasting) {
-            const waterY = this.getWaterHeightAt(this.bobber.x);
-            if (this.bobber.y < waterY) {
-                this.bobber.y += 5; // Gravity
+        if (pitch !== -1) {
+            let targetNoteObj;
+
+            // Decide whether to auto-detect or force the selected string
+            if (this.selectedMode === 'Auto') {
+                targetNoteObj = this.getClosestNote(pitch);
             } else {
-                this.bobber.isCasting = false;
-                this.splash(this.bobber.x, 15);
-                this.buttons[this.bobber.activeIdx].querySelector('span').classList.add('text-hidden');
+                targetNoteObj = this.standardTuning.find(n => n.note === this.selectedMode);
             }
-        } else if (this.bobber.activeIdx !== -1) {
-            const waterY = this.getWaterHeightAt(this.bobber.x);
-            // Floating logic: follow water + slight sine wave bob
-            this.bobber.y = waterY + Math.sin(Date.now() / 400) * 3;
+
+            const cents = this.getCents(pitch, targetNoteObj.freq);
+            
+            // Only update display if the detected pitch is somewhat close (within an octave) 
+            // to the target string to prevent wild jumps on background noise
+            if (this.selectedMode === 'Auto' || Math.abs(cents) < 1200) {
+                this.ui.note.textContent = targetNoteObj.note.replace(/[0-9]/g, '');
+                this.ui.freq.textContent = `${pitch.toFixed(2)} Hz`;
+                
+                // Clamp cents for the visual meter between -50 and 50
+                this.currentCents = Math.max(-50, Math.min(50, cents));
+
+                if (Math.abs(cents) < 5) {
+                    this.ui.status.textContent = "In Tune";
+                    this.ui.status.style.color = "#47cf73";
+                } else {
+                    this.ui.status.textContent = cents > 0 ? "Sharp" : "Flat";
+                    this.ui.status.style.color = "#ff4a4a";
+                }
+            }
         }
+
+        this.drawMeter();
+        requestAnimationFrame(() => this.update());
     }
 
-    getWaterHeightAt(x) {
-        const idx = Math.round((x / this.canvas.width) * (this.numSprings - 1));
-        return this.springs[idx] ? this.springs[idx].height : this.targetHeight;
+    autoCorrelate(buffer, sampleRate) {
+        let sum = 0;
+        for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+        if (Math.sqrt(sum / buffer.length) < 0.01) return -1;
+
+        let r1 = 0, r2 = buffer.length - 1, thres = 0.2;
+        for (let i = 0; i < buffer.length / 2; i++) {
+            if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+        }
+        for (let i = 1; i < buffer.length / 2; i++) {
+            if (Math.abs(buffer[buffer.length - i]) < thres) { r2 = buffer.length - i; break; }
+        }
+
+        buffer = buffer.slice(r1, r2);
+        const c = new Array(buffer.length).fill(0);
+        for (let i = 0; i < buffer.length; i++) {
+            for (let j = 0; j < buffer.length - i; j++) {
+                c[i] = c[i] + buffer[j] * buffer[j + i];
+            }
+        }
+
+        let d = 0; while (c[d] > c[d + 1]) d++;
+        let maxval = -1, maxpos = -1;
+        for (let i = d; i < buffer.length; i++) {
+            if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+        }
+
+        return sampleRate / maxpos;
     }
 
-    splash(x, force) {
-        const idx = Math.round((x / this.canvas.width) * (this.numSprings - 1));
-        if (this.springs[idx]) this.springs[idx].vel = force;
+    getClosestNote(freq) {
+        return this.standardTuning.reduce((prev, curr) => {
+            return (Math.abs(curr.freq - freq) < Math.abs(prev.freq - freq) ? curr : prev);
+        });
     }
 
-    draw() {
-        // Clear frame
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    getCents(detected, target) {
+        return Math.floor(1200 * Math.log2(detected / target));
+    }
 
-        if (this.bobber.activeIdx !== -1) {
-            // Draw Fishing Line
+    drawMeter() {
+        const width = this.ui.canvas.width = this.ui.canvas.offsetWidth;
+        const height = this.ui.canvas.height = this.ui.canvas.offsetHeight;
+        const centerX = width / 2;
+
+        this.ctx.clearRect(0, 0, width, height);
+
+        // Draw static scale
+        this.ctx.strokeStyle = "#444";
+        this.ctx.lineWidth = 2;
+        for (let i = -50; i <= 50; i += 10) {
+            const x = centerX + (i * (width / 120));
             this.ctx.beginPath();
-            this.ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-            this.ctx.lineWidth = 1;
-            this.ctx.moveTo(this.bobber.x, -500); // Top of screen
-            this.ctx.lineTo(this.bobber.x, this.bobber.y);
+            this.ctx.moveTo(x, height - 20);
+            this.ctx.lineTo(x, height - (i === 0 ? 50 : 35));
             this.ctx.stroke();
-
-            // Draw Bobber (Drawn before water to be submerged)
-            this.ctx.font = "26px serif";
-            this.ctx.textAlign = "center";
-            this.ctx.fillText("🔴", this.bobber.x, this.bobber.y + 10);
         }
 
-        // Draw Water
-        this.ctx.fillStyle = "rgba(0, 119, 190, 0.95)";
+        // Draw Needle
+        const needleX = centerX + (this.currentCents * (width / 120));
+        const color = Math.abs(this.currentCents) < 5 ? "#47cf73" : "#ff4a4a";
+        
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = color;
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 4;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, this.canvas.height);
-        for (let i = 0; i < this.numSprings; i++) {
-            this.ctx.lineTo(this.springs[i].x, this.springs[i].height);
-        }
-        this.ctx.lineTo(this.canvas.width, this.canvas.height);
-        this.ctx.fill();
-    }
-
-    animate() {
-        this.update();
-        this.draw();
-        requestAnimationFrame(() => this.animate());
+        this.ctx.moveTo(needleX, height - 10);
+        this.ctx.lineTo(needleX, 20);
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new FishingApp();
-    new WaterNav();
+    new GuitarTuner();
 });

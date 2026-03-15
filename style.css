@@ -6,7 +6,7 @@
 }
 
 body {
-    background-color: #242424;
+    background-color: #121212;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -17,109 +17,102 @@ body {
 #app {
     width: 100%;
     max-width: 400px;
-    min-height: 100vh;
-    background-color: white;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    height: 650px; /* Increased slightly to fit the new buttons */
+    background-color: #1e1e1e;
+    border-radius: 30px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
     display: grid;
+    grid-template-rows: 1fr auto 120px;
     text-align: center;
-    padding-top: 50px;
-    grid-template-rows: 1fr 70px;
     overflow: hidden;
+    padding-top: 40px;
 }
 
-#screen { padding: 0 50px; }
+h1 { color: #4da8da; letter-spacing: 2px; text-transform: uppercase; font-size: 1.2rem; }
 
-h1 { font-size: 1.8rem; margin-bottom: 30px; color: #4da8da; }
-
-.input-group {
-    width: 100%;
+.tuner-container {
+    padding: 20px 20px 0 20px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-input {
-    padding: 15px;
-    border-radius: 12px;
-    border: 2px solid #444;
-    background-color: #222222;
-    color: white;
-    outline: none;
-}
-
-#checkBtn {
-    padding: 15px;
-    border-radius: 12px;
-    background-color: #0077be;
-    color: white;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-}
-
-#result {
-    width: 90%;
-    margin: 0 auto 20px auto;
-    padding: 20px;
-    border-radius: 12px;
-    background-color: #444444;
-    display: none;
-}
-
-#result.visible { display: block; }
-
-/* --- Liquid Nav Bar --- */
-#liquidNav {
-    position: relative;
-    width: 100%;
-    height: 70px;
-    overflow: visible; /* Crucial for falling bobber */
-}
-
-#waterCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-}
-
-.nav-buttons {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
-    z-index: 10;
 }
 
-.nav-item {
-    background: none;
-    border: none;
+#noteDisplay {
+    font-size: 5rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(77, 168, 218, 0.5);
+}
+
+#statusIndicator {
+    font-size: 1.2rem;
+    color: #888;
+    margin-top: 5px;
+}
+
+#frequencyDisplay {
+    font-family: monospace;
+    color: #4da8da;
+    margin-top: 5px;
+    font-size: 1.1rem;
+}
+
+/* --- New String Selectors --- */
+.string-selectors {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0 30px 0;
+    padding: 0 20px;
+}
+
+.string-btn {
+    background-color: #2a2a2a;
+    color: #888;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 10px 0;
+    flex: 1;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.string-btn:hover { background-color: #333; }
+
+.string-btn.active {
+    background-color: #4da8da;
+    color: #fff;
+    border-color: #4da8da;
+    box-shadow: 0 0 10px rgba(77, 168, 218, 0.4);
+}
+
+.input-group { padding: 0 20px; }
+
+#startBtn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 50px;
+    background-color: #4da8da;
     color: white;
     font-weight: bold;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-size: 1.1rem;
+    border: none;
     cursor: pointer;
-    width: 33%;
-    height: 100%;
+    transition: transform 0.2s;
 }
 
-.nav-item span {
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    display: inline-block;
-}
+#startBtn:active { transform: scale(0.98); }
 
-/* Class to hide text when bobber lands */
-.text-hidden {
-    opacity: 0;
-    transform: translateY(10px);
-    pointer-events: none;
+#tunerNav {
+    position: relative;
+    background: #151515;
+    border-top: 1px solid #333;
 }
-
-.loading-pulse { animation: pulse 1.2s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+#meterCanvas { 
+    width: 100%; 
+    height: 100%; 
+    display: block; /* This stops the infinite growing loop */
+}

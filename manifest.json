@@ -1,6 +1,6 @@
 {
-    "name": "Fisherman's Forecast",
-    "short_name": "FishCast",
+    "name": "Guitar tuner",
+    "short_name": "GuitarTune",
     "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#f0f0f0",
