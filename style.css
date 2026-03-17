@@ -161,7 +161,7 @@ button > img{
 }
 
 .guitar-head-wrapper img {
-    max-width: 25.5vw;
+    max-width: 200px;
     object-fit: contain;
     margin-bottom: -20px; /* Sits flush with bottom */
 }
