@@ -16,41 +16,51 @@ body {
 #app {
     width: 100%;
     max-width: 400px;
-    height: 100vh;
     max-height: 850px;
     background-color: #FFFDD0; /* Cream background */
     color: #000;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
     display: grid;
-    grid-template-rows: auto auto 1fr; /* 3 Main Rows */
+    grid-template-rows: max-content  auto max-content; /* 3 Main Rows */
     overflow: hidden;
 }
 
 /* --- Row 1: Top Nav --- */
 .top-nav {
     display: flex;
-    justify-content: space-between;
-    padding: 30px 20px 10px 20px;
+    padding: 30px;
     gap: 15px;
+    justify-content: space-around;
 }
 
 .nav-btn {
-    flex: 1;
+    width: 143px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: #573737;
     color: #fff;
     border: none;
     border-radius: 25px;
     padding: 15px 0;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 12px;
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+button > img{
+    height: 15px;
+    margin-left: 10px;
+
 }
 
 /* --- Row 2: Tuner Nav --- */
 .tuner-nav {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     padding: 20px 0;
 }
 
@@ -65,24 +75,18 @@ body {
 .accidental {
     font-size: 1.5rem;
     color: #000;
-    opacity: 0.2; /* Dims when not active */
-    transition: opacity 0.2s;
 }
 
-.accidental.active {
-    opacity: 1;
-    font-weight: bold;
-}
 
 .note-center {
     text-align: center;
 }
 
 #noteDisplay {
-    font-size: 5rem;
+    font-size: 44px;
     font-weight: 900;
-    line-height: 1;
     color: #000;
+    -webkit-text-stroke: 1.5px #000;
 }
 
 #frequencyDisplay {
@@ -116,23 +120,27 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-evenly;
-    height: 75%;
-    padding-bottom: 40px;
+    padding-bottom: 85px;
     gap: 30px;
 }
 
 .left-strings { align-items: flex-end; }
 .right-strings { align-items: flex-start; }
 
+
+#sharpIcon{
+    font-size: 20px;
+}
+
 .string-btn {
-    width: 55px;
-    height: 55px;
+    width: 47px;
+    height: 47px;
     border-radius: 50%;
     background-color: #573737;
     color: #fff;
     border: 3px solid #573737; /* Base border matches background */
     font-weight: 800;
-    font-size: 1.2rem;
+    font-size: 13px;
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     transition: all 0.2s;
@@ -147,12 +155,11 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    height: 100%;
 }
 
 .guitar-head-wrapper img {
     width: 100%;
-    max-width: 180px;
+    max-width: 200px;
     object-fit: contain;
     margin-bottom: -20px; /* Sits flush with bottom */
 }

@@ -62,8 +62,6 @@ class GuitarTuner {
             this.ui.note.textContent = targetNoteObj.note.replace(/[0-9]/g, '');
             this.ui.freq.textContent = "-- HZ";
             this.currentCents = 0; // Reset needle
-            this.ui.flatIcon.classList.remove('active');
-            this.ui.sharpIcon.classList.remove('active');
             this.drawMeter();
         }
     }
@@ -107,8 +105,6 @@ class GuitarTuner {
                 
                 this.currentCents = Math.max(-100, Math.min(100, cents));
 
-                this.ui.flatIcon.classList.toggle('active', cents <= -5);
-                this.ui.sharpIcon.classList.toggle('active', cents >= 5);
             }
         }
 
@@ -169,13 +165,18 @@ class GuitarTuner {
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
         ctx.font = "bold 12px sans-serif";
+        
+        // 1. Give all lines round edges
+        ctx.lineCap = "round"; 
 
-        const edgeScale = 100; 
-        const maxDrawWidth = width / 2 - 20;
+        // 2. Spread the ticks out more by adjusting the scale and max width
+        const edgeScale = 90; 
+        const maxDrawWidth = width / 2 - 15; 
 
+        // 3. Draw a taller center tick
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(centerX, centerY - 30);
+        ctx.moveTo(centerX, centerY - 60); // Stretches higher up
         ctx.lineTo(centerX, centerY + 15);
         ctx.stroke();
 
@@ -188,26 +189,26 @@ class GuitarTuner {
             ctx.moveTo(centerX + offset, centerY);
             ctx.lineTo(centerX + offset, centerY + 15);
             ctx.stroke();
-            ctx.fillText(tick, centerX + offset, centerY + 32);
+            ctx.fillText(tick, centerX + offset, centerY + 35); // Shifted text slightly down to match
 
             ctx.beginPath();
             ctx.moveTo(centerX - offset, centerY);
             ctx.lineTo(centerX - offset, centerY + 15);
             ctx.stroke();
-            ctx.fillText(tick, centerX - offset, centerY + 32);
+            ctx.fillText(tick, centerX - offset, centerY + 35);
         });
 
         const offset80 = (80 / edgeScale) * maxDrawWidth;
         ctx.font = "bold 18px sans-serif";
-        ctx.fillText("-", centerX - offset80, centerY - 15);
-        ctx.fillText("+", centerX + offset80, centerY - 15);
+        ctx.fillText("-", centerX - offset80, centerY - 20); // Lifted +/- signs up
+        ctx.fillText("+", centerX + offset80, centerY - 20);
 
         if (this.isRunning) {
             const needleX = centerX + (this.currentCents / edgeScale) * maxDrawWidth;
             ctx.strokeStyle = Math.abs(this.currentCents) < 5 ? "#47cf73" : "#000"; 
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(needleX, centerY - 40);
+            ctx.moveTo(needleX, centerY - 60); // Needle height matches new center tick
             ctx.lineTo(needleX, centerY + 15);
             ctx.stroke();
         }
