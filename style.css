@@ -198,11 +198,6 @@ button > img{
         padding: 0 10px 10px 10px;
     }
 
-    /* 4. Constrain and scale the Guitar Head Image */
-    .guitar-head-wrapper img {
-        max-width: 175px; /* Your requested max width */
-        width: 100%; /* Ensures it shrinks proportionally below 175px */
-    }
 
     /* 5. Scale down the string buttons slightly to fit the new 55px columns */
     .string-btn {
