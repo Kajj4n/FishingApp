@@ -205,6 +205,7 @@ button > img{
         border-width: 2px; /* Slightly thinner border for tiny buttons */
         margin-left: -16vw;
         margin-right: -16vw;
+        z-index: 100;
     }
 
     /* Pull the buttons a bit closer to the image to maintain the ratio */
