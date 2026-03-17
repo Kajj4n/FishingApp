@@ -175,7 +175,7 @@ button > img{
     }
     /* 1. Fix the Top Nav overflow */
     .top-nav {
-        padding: 20px 15px; /* Reduce side padding */
+        padding: 25px 15px 0 15px; /* Reduce side padding */
         gap: 10px;
     }
 
