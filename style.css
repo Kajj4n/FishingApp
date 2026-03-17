@@ -62,7 +62,7 @@ button > img{
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 20px 0;
+    padding: 30px 0;
 }
 
 .note-display-wrapper {
@@ -169,6 +169,10 @@ button > img{
 /* --- Responsive Adjustments for Small Screens (Under 400px) --- */
 @media (max-width: 400px) {
     
+    #app{
+      grid-template-rows: 1fr max-content max-content;
+
+    }
     /* 1. Fix the Top Nav overflow */
     .top-nav {
         padding: 20px 15px; /* Reduce side padding */
@@ -213,6 +217,6 @@ button > img{
     /* Pull the buttons a bit closer to the image to maintain the ratio */
     .strings-col {
         gap: 25px; 
-        padding-bottom: 10.5vh;
+        padding-bottom: 80px;
     }
 }
