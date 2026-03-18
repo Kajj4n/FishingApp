@@ -17,7 +17,6 @@ class GuitarTuner {
             { note: 'E4', freq: 329.63 }
         ];
 
-        // 2. Audio playback structure
         this.stringSounds = {
             'E2': new Audio('./sounds/E2.mp3'),
             'A2': new Audio('./sounds/A2.mp3'),
@@ -34,51 +33,41 @@ class GuitarTuner {
             flatIcon: document.getElementById('flatIcon'),
             sharpIcon: document.getElementById('sharpIcon'),
             stringBtns: document.querySelectorAll('.string-btn'),
-            // Removed standardBtn listener since it's for future use
         };
 
         this.ctx = this.ui.canvas.getContext('2d');
         this.currentCents = 0;
         
-        // Setup listeners for string selection
         this.ui.stringBtns.forEach(btn => {
             btn.addEventListener('click', (e) => this.selectString(e.target));
         });
 
-        // Start tuner immediately in Auto mode on first user interaction 
-        // (Browsers require interaction before audio context can start)
+        // Start tuner immediately in Auto mode on first interaction
         document.body.addEventListener('click', () => {
             if (!this.isRunning) this.startTuner();
         }, { once: true });
 
-        this.drawMeter(); // Draw initial static canvas
+        this.drawMeter();
     }
 
     selectString(btnTarget) {
-        // Toggle logic: If clicking the already active button, return to Auto
+        // Toggle logic: If clicking the active button, unclick it and go back to Auto
         if (btnTarget.classList.contains('active')) {
             btnTarget.classList.remove('active');
             this.selectedMode = 'Auto';
             this.stopAllAudio();
-            this.currentCents = 0;
             return;
         }
 
-        // Update styling for new selection
         this.ui.stringBtns.forEach(btn => btn.classList.remove('active'));
         btnTarget.classList.add('active');
-        
-        // Set internal state
         this.selectedMode = btnTarget.dataset.note;
         
-        // Play the audio for the selected string
         this.playStringAudio(this.selectedMode);
         
-        // Start tuner if it isn't already running
         if (!this.isRunning) {
             this.startTuner();
         } else {
-            // Reset needle while waiting for new mic input
             this.currentCents = 0; 
             this.drawMeter();
         }
@@ -86,10 +75,8 @@ class GuitarTuner {
 
     playStringAudio(note) {
         this.stopAllAudio();
-        
-        // Play the newly selected string sound
         if (this.stringSounds[note]) {
-            this.stringSounds[note].play().catch(e => console.log("Audio file missing or blocked:", e)); 
+            this.stringSounds[note].play().catch(e => console.warn("Audio file missing:", note)); 
         }
     }
 
@@ -102,21 +89,18 @@ class GuitarTuner {
 
     async startTuner() {
         if (this.isRunning) return;
-
         try {
             this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const source = this.audioCtx.createMediaStreamSource(stream);
-            
             this.analyser = this.audioCtx.createAnalyser();
             this.analyser.fftSize = 2048;
             source.connect(this.analyser);
-
             this.dataArray = new Float32Array(this.analyser.fftSize);
             this.isRunning = true;
             this.update();
         } catch (err) {
-            alert("Microphone access denied. Please allow microphone permissions to tune.");
+            alert("Microphone access denied.");
         }
     }
 
@@ -128,19 +112,16 @@ class GuitarTuner {
 
         if (pitch !== -1) {
             const detectedNoteObj = this.getClosestNote(pitch);
-
             const targetNoteObj = this.selectedMode === 'Auto' 
                 ? detectedNoteObj 
                 : this.standardTuning.find(n => n.note === this.selectedMode);
 
-            // Calculate cents (distance in musical pitch)
             const cents = this.getCents(pitch, targetNoteObj.freq);
             
             this.ui.note.textContent = detectedNoteObj.note.replace(/[0-9]/g, '');
             this.ui.freq.textContent = `${Math.round(pitch)} HZ`;
             
-            // Limit the needle to a maximum of +/- 50 cents (half a semitone)
-            // This prevents the needle from going out of bounds
+            // Limit needle to +/- 50 cents (the edge of our visual scale)
             this.currentCents = Math.max(-50, Math.min(50, cents));
         }
 
@@ -174,7 +155,6 @@ class GuitarTuner {
         for (let i = d; i < buffer.length; i++) {
             if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
         }
-
         return sampleRate / maxpos;
     }
 
@@ -210,11 +190,11 @@ class GuitarTuner {
         ctx.lineCap = "round"; 
         ctx.lineJoin = "round";
 
-        // NEW SCALE: Edge of the meter is exactly 50 cents
+        // Setting max scale to 50 cents
         const edgeScale = 50; 
         const maxDrawWidth = width / 2 - 40; 
 
-        // Target center line
+        // 1. Draw Static Ticks
         ctx.strokeStyle = "#573737"; 
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -225,7 +205,6 @@ class GuitarTuner {
         ctx.lineWidth = 2;
         ctx.textAlign = "center";
 
-        // Ticks representing 10, 20, 30, 40, 50 cents
         const ticks = [10, 20, 30, 40, 50];
         let offsetMax = 0; 
 
@@ -241,8 +220,8 @@ class GuitarTuner {
             ctx.lineTo(centerX - offset, baselineY + 10);
             ctx.stroke();
 
-            // Only draw numbers for 20 and 40 to avoid crowding
-            if (tick === 20 || tick === 40) {
+            // Label every other tick to keep it clean
+            if (tick % 20 === 0) {
                 ctx.fillStyle = "#000000";
                 ctx.font = "bold 12px sans-serif";
                 ctx.fillText(tick, centerX + offset, baselineY + 30);
@@ -250,19 +229,19 @@ class GuitarTuner {
             }
         });
 
-        // +/- signs at the very edge
+        // 2. Position +/- Signs (Placed directly above the 50 ticks)
         ctx.fillStyle = "#000000";
         ctx.font = "bold 20px sans-serif";
-        ctx.fillText("-", centerX - offsetMax - 15, baselineY - 20);
-        ctx.fillText("+", centerX + offsetMax + 15, baselineY - 20);
+        ctx.fillText("-", centerX - offsetMax, baselineY - 20);
+        ctx.fillText("+", centerX + offsetMax, baselineY - 20);
 
+        // 3. Draw Dynamic Needle
         if (this.isRunning) {
             const needleX = centerX + (this.currentCents / edgeScale) * maxDrawWidth;
             
-            ctx.strokeStyle = Math.abs(this.currentCents) < 5 ? "#47cf73" : "#573737"; 
-            
-            // THINNER NEEDLE: Reduced from 5 to 3
-            ctx.lineWidth = 3; 
+            // Moving line is now BLACK, turning green when in tune
+            ctx.strokeStyle = Math.abs(this.currentCents) < 5 ? "#47cf73" : "#000000"; 
+            ctx.lineWidth = 3; // Thinner needle
             
             ctx.beginPath();
             ctx.moveTo(needleX, baselineY - 90); 
