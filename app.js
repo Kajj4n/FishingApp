@@ -8,11 +8,9 @@ class GuitarTuner {
         this.fadeInterval = null;
         this.currentAudio = null;
 
-        this.selectedMode = 'Auto'; // Can be 'Auto' or a specific note like 'E2'
+        this.selectedMode = 'Auto'; 
         this.currentTuningName = "Standard";
-        this.tuningsData = []; // Loaded from JSON
-        
-        // This will hold the active notes/freqs for the current tuning
+        this.tuningsData = []; 
         this.activeTuning = []; 
 
         this.ui = {
@@ -21,10 +19,16 @@ class GuitarTuner {
             canvas: document.getElementById('meterCanvas'),
             stringBtns: document.querySelectorAll('.string-btn'),
             appContainer: document.getElementById('app'),
+            
             tunePage: document.getElementById('tune-page'),
             openTuneBtn: document.getElementById('open-tune-btn'),
             closeTuneBtn: document.getElementById('close-tune-btn'),
-            tuningList: document.getElementById('tuning-list-container')
+            tuningList: document.getElementById('tuning-list-container'),
+
+            chordPage: document.getElementById('chord-page'),
+            openChordBtn: document.getElementById('open-chord-btn'),
+            closeChordBtn: document.getElementById('close-chord-btn'),
+            chordListContainer: document.getElementById('chord-list-container')
         };
 
         this.ctx = this.ui.canvas.getContext('2d');
@@ -44,7 +48,6 @@ class GuitarTuner {
             const response = await fetch('./guitartunings.json');
             const data = await response.json();
             this.tuningsData = data.guitarTunings;
-            // Set default to Standard
             this.applyTuning(this.tuningsData[0]);
             this.renderTuningList();
         } catch (e) {
@@ -72,11 +75,85 @@ class GuitarTuner {
             });
         }
 
+        if (this.ui.openChordBtn) {
+            this.ui.openChordBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.ui.appContainer.classList.add('hide-main');
+                this.ui.chordPage.classList.add('active');
+                if (this.ui.chordListContainer.innerHTML === '') {
+                    this.loadChords();
+                }
+            });
+        }
+
+        if (this.ui.closeChordBtn) {
+            this.ui.closeChordBtn.addEventListener('click', () => {
+                this.ui.appContainer.classList.remove('hide-main');
+                this.ui.chordPage.classList.remove('active');
+            });
+        }
+
         document.body.addEventListener('click', () => {
             if (!this.isRunning) this.startTuner();
         }, { once: true });
     }
 
+    /**
+     * FIXED: Correct ID mapping and image property path
+     */
+/**
+     * UPDATED: Uses Scales-Chords Widget API for reliable diagrams
+     */
+    /**
+     * UPDATED: Uses the dynamic 'name' from the loop and ensures the script triggers
+     */
+    loadChords() {
+        this.ui.chordListContainer.innerHTML = '<div class="chord-grid"></div>';
+        const grid = this.ui.chordListContainer.querySelector('.chord-grid');
+
+        // The list of chords we want to display
+        const chords = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Am', 'Em', 'Dm'];
+
+        chords.forEach(name => {
+            const card = document.createElement('div');
+            card.className = 'chord-card';
+            
+            // FIX: Use ${name} for the chord attribute so it's not always D#m(maj9)
+            card.innerHTML = `
+                <h3>${name}</h3>
+                <div class="chord-image-container" style="min-height: 150px; display: flex; justify-content: center;">
+                    <ins class="scales_chords_api" 
+                         chord="${name}" 
+                         instrument="guitar" 
+                         output="image" 
+                         width="100" 
+                         height="150"></ins>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        // Give the browser a tiny moment to render the HTML tags before telling the API to draw
+        setTimeout(() => this.refreshChordDiagrams(), 100);
+    }
+
+    refreshChordDiagrams() {
+        // The Scales-Chords API uses this specific function name to re-scan the page
+        if (typeof window.scales_chords_api_draw === 'function') {
+            window.scales_chords_api_draw();
+        } else {
+            console.warn("Scales-Chords API script not fully loaded yet.");
+            // Fallback: If the function isn't ready, try re-injecting the script
+            const script = document.getElementById('scales-chords-script');
+            if (script) {
+                const newScript = document.createElement('script');
+                newScript.src = script.src;
+                newScript.id = 'scales-chords-script';
+                newScript.async = true;
+                script.parentNode.replaceChild(newScript, script);
+            }
+        }
+    }
     renderTuningList() {
         this.ui.tuningList.innerHTML = '';
         this.tuningsData.forEach(t => {
@@ -91,8 +168,8 @@ class GuitarTuner {
             `;
             item.onclick = () => {
                 this.applyTuning(t);
-                this.renderTuningList(); // Refresh selection UI
-                this.ui.closeTuneBtn.click(); // Close page
+                this.renderTuningList();
+                this.ui.closeTuneBtn.click();
             };
             this.ui.tuningList.appendChild(item);
         });
@@ -105,17 +182,13 @@ class GuitarTuner {
             freq: tuningObj.frequencies[i]
         }));
 
-        // Update Nav Button Text
         this.ui.openTuneBtn.innerHTML = `${tuningObj.name} <img src="./images/note.png" alt="note">`;
 
-        // Update Guitar String Buttons
-        // Indices: 0=E(low), 1=A, 2=D, 3=G, 4=B, 5=E(high)
-        // Mapping to HTML layout (Left col: index 2,1,0 | Right col: 3,4,5)
         const mapping = [2, 1, 0, 3, 4, 5]; 
         this.ui.stringBtns.forEach((btn, i) => {
             const tuningIndex = mapping[i];
             const noteName = this.activeTuning[tuningIndex].note;
-            btn.textContent = noteName.replace(/[0-9]/g, ''); // Remove octave number for display
+            btn.textContent = noteName.replace(/[0-9]/g, ''); 
             btn.dataset.note = noteName;
             btn.classList.remove('active');
         });
@@ -136,19 +209,12 @@ class GuitarTuner {
         btnTarget.classList.add('active');
         this.selectedMode = btnTarget.dataset.note;
         
-        // Note: For actual audio files per tuning, you'd need the specific mp3 paths 
-        // linked in your JSON. For now, this uses existing play logic.
         this.playStringAudio(this.selectedMode);
     }
-
-    // ... Keeping your existing audio, correlation, and draw logic ...
     
     playStringAudio(note) {
         this.stopAllAudio();
-        
-        // Keeping your exact pathing requirement
         this.currentAudio = new Audio(`./audio/${note}-standard.mp3`); 
-
         this.currentAudio.volume = 1.0;
         this.currentAudio.play().catch(() => console.warn("Audio not found for", note));
 
@@ -166,7 +232,6 @@ class GuitarTuner {
     stopAllAudio() {
         clearTimeout(this.fadeTimeout);
         clearInterval(this.fadeInterval);
-        
         if (this.currentAudio) {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
@@ -198,8 +263,6 @@ class GuitarTuner {
         
         if (pitch !== -1) {
             const detectedNoteObj = this.getClosestNote(pitch);
-            
-            // Logic change: Compare against the ACTIVE tuning notes
             const targetNoteObj = this.selectedMode === 'Auto' 
                 ? detectedNoteObj 
                 : this.activeTuning.find(n => n.note === this.selectedMode);
@@ -242,7 +305,6 @@ class GuitarTuner {
     }
 
     getClosestNote(freq) {
-        // Always compare against standard notes to detect what note the user is "hitting"
         return this.activeTuning.reduce((prev, curr) => {
             return (Math.abs(curr.freq - freq) < Math.abs(prev.freq - freq) ? curr : prev);
         });
@@ -270,7 +332,6 @@ class GuitarTuner {
         const edgeScale = 50; 
         const maxDrawWidth = width / 2 - 40; 
 
-        // Center line
         ctx.strokeStyle = "#573737"; 
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -278,7 +339,6 @@ class GuitarTuner {
         ctx.lineTo(centerX, baselineY + 15);
         ctx.stroke();
 
-        // Ticks
         const ticks = [10, 20, 30, 40, 50];
         ticks.forEach(tick => {
             const offset = (tick / edgeScale) * maxDrawWidth;
