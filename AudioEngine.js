@@ -5,18 +5,26 @@ export class AudioEngine {
         this.analyser = null;
         this.dataArray = null;
         this.isRunning = false;
-        
-        // For MP3 Playback
         this.currentAudio = null;
         this.fadeInterval = null;
         this.fadeTimeout = null;
+        
+        // Optimization constants
+        this.minFreq = 60;  // Ignore sub-bass rumble
+        this.maxFreq = 1000; // Ignore high-pitched squeaks/harmonics
     }
 
     async init() {
         if (this.isRunning) return;
         try {
             this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { 
+                    echoCancellation: false, 
+                    noiseSuppression: false, 
+                    autoGainControl: false 
+                } 
+            });
             const source = this.audioCtx.createMediaStreamSource(stream);
             this.analyser = this.audioCtx.createAnalyser();
             this.analyser.fftSize = 2048;
@@ -31,10 +39,13 @@ export class AudioEngine {
     getPitch() {
         if (!this.isRunning) return -1;
         this.analyser.getFloatTimeDomainData(this.dataArray);
-        return this.autoCorrelate(this.dataArray, this.audioCtx.sampleRate);
+        const pitch = this.autoCorrelate(this.dataArray, this.audioCtx.sampleRate);
+        
+        // Filter out erratic jumps
+        if (pitch < this.minFreq || pitch > this.maxFreq) return -1;
+        return pitch;
     }
 
-    // Logic to find the closest note from your current tuning
     getClosestNote(freq, activeTuning) {
         return activeTuning.reduce((prev, curr) => {
             return (Math.abs(curr.freq - freq) < Math.abs(prev.freq - freq) ? curr : prev);
@@ -45,6 +56,36 @@ export class AudioEngine {
         return Math.floor(1200 * Math.log2(detected / target));
     }
 
+    autoCorrelate(buffer, sampleRate) {
+        let sum = 0;
+        for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+        
+        // Increased silence threshold to avoid "ghost" notes
+        if (Math.sqrt(sum / buffer.length) < 0.02) return -1;
+
+        let r1 = 0, r2 = buffer.length - 1, thres = 0.2;
+        for (let i = 0; i < buffer.length / 2; i++) {
+            if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+        }
+        for (let i = 1; i < buffer.length / 2; i++) {
+            if (Math.abs(buffer[buffer.length - i]) < thres) { r2 = buffer.length - i; break; }
+        }
+        buffer = buffer.slice(r1, r2);
+        
+        const c = new Array(buffer.length).fill(0);
+        for (let i = 0; i < buffer.length; i++) {
+            for (let j = 0; j < buffer.length - i; j++) {
+                c[i] = c[i] + buffer[j] * buffer[j + i];
+            }
+        }
+
+        let d = 0; while (c[d] > c[d + 1]) d++;
+        let maxval = -1, maxpos = -1;
+        for (let i = d; i < buffer.length; i++) {
+            if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+        }
+        return sampleRate / maxpos;
+    }
     // --- Audio Playback Logic ---
     playStringAudio(note) {
         this.stopAllAudio();
@@ -71,38 +112,5 @@ export class AudioEngine {
             this.currentAudio.currentTime = 0;
             this.currentAudio = null;
         }
-    }
-
-    autoCorrelate(buffer, sampleRate) {
-        let sum = 0;
-        for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
-        
-        if (Math.sqrt(sum / buffer.length) < 0.01) return -1;
-        let r1 = 0, r2 = buffer.length - 1, thres = 0.2;
-
-        for (let i = 0; i < buffer.length / 2; i++) {
-            if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
-        }
-
-        for (let i = 1; i < buffer.length / 2; i++) {
-            if (Math.abs(buffer[buffer.length - i]) < thres) { r2 = buffer.length - i; break; }
-        }
-
-        buffer = buffer.slice(r1, r2);
-        const c = new Array(buffer.length).fill(0);
-
-        for (let i = 0; i < buffer.length; i++) {
-            for (let j = 0; j < buffer.length - i; j++) {
-                c[i] = c[i] + buffer[j] * buffer[j + i];
-            }
-        }
-
-        let d = 0; while (c[d] > c[d + 1]) d++;
-        let maxval = -1, maxpos = -1;
-
-        for (let i = d; i < buffer.length; i++) {
-            if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
-        }
-        return sampleRate / maxpos;
     }
 }

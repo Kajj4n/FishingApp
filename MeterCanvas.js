@@ -1,22 +1,31 @@
-// MeterCanvas.js
 export class MeterCanvas {
     constructor(canvasElement) {
         this.canvas = canvasElement;
         this.ctx = this.canvas.getContext('2d');
-        this.currentCents = 0;
+        this.currentCents = 0;    // The smoothed value we draw
+        this.targetCents = 0;     // The raw value from the engine
         this.isRunning = false;
+        this.lerpFactor = 0.15;   // Adjust this (0.05 is slow/smooth, 0.3 is fast/jumpy)
     }
 
     updateCents(cents, isRunning) {
-        this.currentCents = cents;
+        this.targetCents = cents;
         this.isRunning = isRunning;
+        
+        // Apply Linear Interpolation: Current = Current + (Target - Current) * Factor
+        if (this.isRunning) {
+            this.currentCents += (this.targetCents - this.currentCents) * this.lerpFactor;
+        } else {
+            // Gradually return to center when silent
+            this.currentCents += (0 - this.currentCents) * 0.1;
+        }
+        
         this.draw();
     }
 
     draw() {
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.getBoundingClientRect();
-        
         if (this.canvas.width !== rect.width * dpr) {
             this.canvas.width = rect.width * dpr;
             this.canvas.height = rect.height * dpr;
@@ -34,7 +43,7 @@ export class MeterCanvas {
         const edgeScale = 50; 
         const maxDrawWidth = width / 2 - 40; 
 
-        // Center Line
+        // Center Static Line
         ctx.strokeStyle = "#573737"; 
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -54,15 +63,15 @@ export class MeterCanvas {
             ctx.stroke();
         });
 
-        // Needle
-        if (this.isRunning) {
-            const needleX = centerX + (this.currentCents / edgeScale) * maxDrawWidth;
-            ctx.strokeStyle = Math.abs(this.currentCents) < 5 ? "#47cf73" : "#000000"; 
-            ctx.lineWidth = 3; 
-            ctx.beginPath();
-            ctx.moveTo(needleX, baselineY - 90); 
-            ctx.lineTo(needleX, baselineY + 15);
-            ctx.stroke();
-        }
+        // The Smooth Moving Needle
+        const needleX = centerX + (this.currentCents / edgeScale) * maxDrawWidth;
+        
+        // Color changes based on the smoothed value
+        ctx.strokeStyle = Math.abs(this.currentCents) < 3 ? "#47cf73" : "#000000"; 
+        ctx.lineWidth = 3; 
+        ctx.beginPath();
+        ctx.moveTo(needleX, baselineY - 90); 
+        ctx.lineTo(needleX, baselineY + 15);
+        ctx.stroke();
     }
 }
