@@ -200,7 +200,6 @@ button > img{
     }
 
     .nav-btn {
-        width: 100%; /* Let it shrink instead of being locked at 143px */
         max-width: 143px; 
         padding: 12px 0;
         font-size: 11px;
