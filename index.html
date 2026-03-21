@@ -3,69 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StringTune - Guitar Tuner</title>
+    <title>StringTune</title>
     <link rel="stylesheet" href="./style.css">
     <link href='https://fonts.googleapis.com/css?family=Inter' rel='stylesheet'>
 </head>
 <body>
-    <div id="app">
-
-        <div class="top-nav">
-            <button id="open-tune-btn" class="nav-btn active">E-Standard<img src="./images/note.png" alt="note"> </button>
-            <button id="open-chord-btn" class="nav-btn">Chord Book <img src="./images/chordbook.png" alt="chordbook"></button>
-        </div>
-
-        <div class="tuner-nav">
-            <div class="note-display-wrapper">
-                <div class="note-row">
-                    <div class="accidental" id="flatIcon">♭</div>
-                    <div id="noteDisplay">E</div>
-                    <div class="accidental" id="sharpIcon">#</div>
-                </div>
-                
-                <div id="frequencyDisplay">-- HZ</div>
-            </div>
-
-            <div class="meter-wrapper">
-                <canvas id="meterCanvas"></canvas>
-            </div>
-        </div>
-
-        <div class="guitar-section">
-            <div class="strings-col left-strings">
-                <button class="string-btn" data-note="D3">D</button>
-                <button class="string-btn" data-note="A2">A</button>
-                <button class="string-btn" data-note="E2">E</button> 
-            </div>
-
-            <div class="guitar-head-wrapper">
-                <img src="./images/guitarhead.png" alt="Guitar Head">
-            </div>
-
-            <div class="strings-col right-strings">
-                <button class="string-btn" data-note="G3">G</button>
-                <button class="string-btn" data-note="B3">B</button>
-                <button class="string-btn" data-note="E4">E</button>
-            </div>
-        </div>
-
-        <div id="tune-page">
-            <nav id="return-nav">
-                <button id="close-tune-btn">←</button>
-                <h2>Select Tuning</h2>
-            </nav>
-            <div id="tuning-list-container"></div>
-        </div>
-
-        <div id="chord-page">
-            <nav id="return-nav-chord">
-                <button id="close-chord-btn">←</button>
-                <h2>List of Chords</h2>
-            </nav>
-            <div id="chord-list-container"></div>
-        </div>
-    </div>
-    <script src="app.js"></script>
-    <script id="scales-chords-script" async type="text/javascript" src="https://www.scales-chords.com/api/scales-chords-api.js"></script>
+    <div id="app"></div> 
+    
+    <script type="module" src="./app.js"></script>
 </body>
 </html>
