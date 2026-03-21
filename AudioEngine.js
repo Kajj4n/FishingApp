@@ -76,23 +76,30 @@ export class AudioEngine {
     autoCorrelate(buffer, sampleRate) {
         let sum = 0;
         for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+        
         if (Math.sqrt(sum / buffer.length) < 0.01) return -1;
         let r1 = 0, r2 = buffer.length - 1, thres = 0.2;
+
         for (let i = 0; i < buffer.length / 2; i++) {
             if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
         }
+
         for (let i = 1; i < buffer.length / 2; i++) {
             if (Math.abs(buffer[buffer.length - i]) < thres) { r2 = buffer.length - i; break; }
         }
+
         buffer = buffer.slice(r1, r2);
         const c = new Array(buffer.length).fill(0);
+
         for (let i = 0; i < buffer.length; i++) {
             for (let j = 0; j < buffer.length - i; j++) {
                 c[i] = c[i] + buffer[j] * buffer[j + i];
             }
         }
+
         let d = 0; while (c[d] > c[d + 1]) d++;
         let maxval = -1, maxpos = -1;
+
         for (let i = d; i < buffer.length; i++) {
             if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
         }
