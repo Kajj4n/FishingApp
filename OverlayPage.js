@@ -8,7 +8,7 @@ export class OverlayPage extends UIComponent {
         
         this.element.innerHTML = `
             <nav id="return-nav">
-                <button id="${closeBtnId}">←</button>
+                <button id="${closeBtnId}"><</button>
                 <h2>${title}</h2>
             </nav>
             <div id="${contentId}"></div>
